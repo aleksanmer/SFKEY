@@ -20,7 +20,7 @@ namespace SDHelper
     {
 
         #region Fields
-        private static string Release = "0.0.0.1";
+        private static string Release = "1.0.0.0";
         private static string AName = "Shadow Demon Helper";
 
         private static bool Loaded = false;
