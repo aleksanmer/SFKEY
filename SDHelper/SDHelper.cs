@@ -229,7 +229,7 @@ namespace SDHelper
         }
         private static bool CanRelease()
         {
-            if (MyHero.IsChanneling() || !MyHero.CanCast() || !ShadowPoisonRelease.CanBeCasted() || MyHero.Mana < ShadowPoisonRelease.ManaCost) return false;
+            if (MyHero.IsChanneling() || !MyHero.CanCast() || !ShadowPoisonRelease.CanBeCasted()) return false;
             return true;
         }
 
