@@ -57,7 +57,37 @@ namespace AutoArmlet
             ui.AddMainElement(keys);
             Game.OnUpdate += Game_OnUpdate;
             Game.OnWndProc += Game_OnWndProc;
+            Player.OnExecuteOrder += Player_OnExecuteOrder;
         }
+
+        #region Order
+        static void Player_OnExecuteOrder(Player sender, ExecuteOrderEventArgs args)
+        {
+            if (!Game.IsInGame || loaded == false || enabledAuto.isActive == false || armlet == null || myHero == null || args.Target == null || args.Ability == null || sender.Hero == null) return;
+
+            if (args.Target == myHero)
+            {
+                var damage = 0f;
+                switch(args.Ability.Name)
+                {
+                    case "phantom_lancer_spirit_lance":
+                        damage = (float)args.Ability.AbilityData.First(x => x.Name.ToLower().Contains("total_damage")).GetValue(args.Ability.Level - 1);
+                        break;
+                    default:
+                        damage = (float)args.Ability.AbilityData.First(x => x.Name.ToLower().Contains("damage")).GetValue(args.Ability.Level - 1);
+                        break;
+                }
+
+                if (damage != null && damage < 10000f)
+                {
+                    var recvDamage = myHero.DamageTaken(damage, args.Ability.DamageType, sender.Hero);
+                    if (recvDamage >= myHero.Health && CanToggleArmlet())
+                        ArmletToggle(true);
+                }
+            }
+        }
+        #endregion
+
         #endregion
 
         #region WND
@@ -102,20 +132,6 @@ namespace AutoArmlet
             }
 
             if (armlet == null) return;
-
-            if (Utils.SleepCheck("auto_armlet") && CanToggleArmlet() && enabledAuto.isActive && myHero.Health < 475)
-            {
-                switch(armlet.IsToggled)
-                { 
-                    case false:
-                        ArmletToggle(true);
-                        break;
-                    case true:
-                        if (myHero.Health < ( 475 * ( 1.6 / 2 ) ) ) ArmletToggle(true);
-                        break;
-                }
-                Utils.Sleep(200, "auto_armlet");
-            }
         }
         #endregion
 
@@ -134,7 +150,7 @@ namespace AutoArmlet
                     armlet.ToggleAbility();
                     break;
             }
-            Utils.Sleep(900, "armlet_toggle");
+            Utils.Sleep(500, "armlet_toggle");
         }
 
         private static bool CanToggleArmlet()
