@@ -58,6 +58,8 @@ namespace Ez_Unit_Control
         private static EzElement UseSlam;
         private static EzElement UseFrenzy;
         private static EzElement UseNThunderClap;
+        private static EzElement UseIceArmor;
+        private static EzElement UseIceArmorAllies;
         private static EzElement UseHeal;
         private static EzElement UseEnsnare;
         private static EzElement UseWarStomp;
@@ -117,6 +119,8 @@ namespace Ez_Unit_Control
             var neutrals = new EzElement(ElementType.CATEGORY, "Neutrals", false);
             UseHeal = new EzElement(ElementType.CHECKBOX, "Use Heal [Priest]", true);
             PriestsHealHero = new EzElement(ElementType.CHECKBOX, "Priests heal hero [Priest]", true);
+            UseIceArmor = new EzElement(ElementType.CHECKBOX, "Use Ice Armor on my hero [Ogre Magi]", true);
+            UseIceArmorAllies = new EzElement(ElementType.CHECKBOX, "Use Ice Armor on allied units (controllable) [Ogre Magi]", false);
             PriestsHealAlliesCreeps = new EzElement(ElementType.CHECKBOX, "Priests heal allied units (controllable) [Priest]", false);
             UseChainLightning = new EzElement(ElementType.CHECKBOX, "Use Chain Lightning [Harpy Storm]", true);
             UseSlam = new EzElement(ElementType.CHECKBOX, "Use Slam [Big Thunder Lizard]", true);
@@ -128,6 +132,8 @@ namespace Ez_Unit_Control
             neutrals.AddElement(UseHeal);
             neutrals.AddElement(PriestsHealHero);
             neutrals.AddElement(PriestsHealAlliesCreeps);
+            neutrals.AddElement(UseIceArmor);
+            neutrals.AddElement(UseIceArmorAllies);
             neutrals.AddElement(UseChainLightning);
             neutrals.AddElement(UseSlam);
             neutrals.AddElement(UseFrenzy);
@@ -152,7 +158,7 @@ namespace Ez_Unit_Control
             Interface.AddMainElement(new EzElement(ElementType.TEXT, "Info", false));
             Target = new EzElement(ElementType.TEXT, "Current Target: None", false);
             Interface.AddMainElement(Target);
-            Interface.AddMainElement(new EzElement(ElementType.TEXT, "Version: 1.0.0.3", true));
+            Interface.AddMainElement(new EzElement(ElementType.TEXT, "Version: 1.0.0.4", true));
 
             SupportedUnits.Add(ClassID.CDOTA_BaseNPC_Invoker_Forged_Spirit);
             SupportedUnits.Add(ClassID.CDOTA_BaseNPC_Warlock_Golem);
@@ -239,8 +245,7 @@ namespace Ez_Unit_Control
 
                 if (controllable_units != null)
                 {
-                    if (IsChasing && TargetHero != null && TargetHero.IsValid && TargetHero.IsAlive)
-                        TargetHero = TargetHero;
+                    if (IsChasing && TargetHero != null && TargetHero.IsValid && TargetHero.IsAlive) TargetHero = TargetHero;
                     else TargetHero = GetClosestToMouseTarget(MyHero, 800f);
                     var target = TargetHero;
 
@@ -256,7 +261,8 @@ namespace Ez_Unit_Control
                                 if (MoveTheSameWayAsHero.isActive && LastMoving != Vector3.Zero && unit.Distance2D(LastMoving) >= 300) unit.Move(LastMoving);
                                 Utils.Sleep(300, unit.Handle.ToString() + "moving");
                             }
-                            continue; 
+                            if (unit.Name != "npc_dota_neutral_ogre_magi" && unit.Name != "npc_dota_neutral_forest_troll_high_priest")
+                                continue; 
                         } 
 
                         if (!UseAbilities.isActive)
@@ -334,6 +340,27 @@ namespace Ez_Unit_Control
                                         else
                                             AttackIfCan(unit, target);
                                         break;
+                                    case "npc_dota_neutral_ogre_magi":
+                                        var iceArmor = unit.Spellbook.Spell1;
+                                        if (UseIceArmor.isActive)
+                                        {
+                                            if (!MyHero.Modifiers.Any(x => x.Name == ("modifier_ogre_magi_frost_armor")))
+                                            {
+                                                if (CanCast(unit, iceArmor))
+                                                    iceArmor.UseAbility(MyHero);
+                                            }
+                                            else if (UseIceArmorAllies.isActive)
+                                            {
+                                                foreach (Unit uni in controllable_units)
+                                                {
+                                                    if (!uni.Modifiers.Any(x => x.Name == ("modifier_ogre_magi_frost_armor")))
+                                                        if (CanCast(unit, iceArmor))
+                                                            iceArmor.UseAbility(uni);
+                                                }
+                                            }
+                                            AttackIfCan(unit, target);
+                                        } else AttackIfCan(unit, target);
+                                       break;
                                     case "npc_dota_neutral_big_thunder_lizard":
                                         var slam = unit.Spellbook.Spell1;
                                         var frenzy = unit.Spellbook.Spell2;
@@ -365,7 +392,7 @@ namespace Ez_Unit_Control
                                                             heal.UseAbility(uni);
                                                 }
                                             }
-                                            else AttackIfCan(unit, target);
+                                            AttackIfCan(unit, target);
                                         }
                                         else AttackIfCan(unit, target);
                                         break;
@@ -408,6 +435,7 @@ namespace Ez_Unit_Control
         #region Methods
         private static void CastSpellsIfCanOrAttack(Ability ability, Unit source,  Hero target, bool cStun, byte targetType, Vector3 targetPos, float range = 0f)
         {
+
             if (range == 0f)
             {
                 if ((cStun ? !target.IsStunned() : true) && CanCast(source, ability) && !target.IsInvul())
@@ -435,11 +463,12 @@ namespace Ez_Unit_Control
         }
         private static void AttackIfCan(Unit source, Unit target)
         {
+            if (target == null) return;
             if (source.CanAttack() && AttackTarget.isActive && !target.IsAttackImmune() && !target.IsInvul()) source.Attack(target);
         }
         private static bool CanCast(Unit source, Ability ability)
         {
-            return ((Math.Round(source.Mana) - ability.ManaCost >= 0) && ability.Cooldown == 0f && ability.Level != 0 && !source.IsStunned());
+            return ((Math.Round(source.Mana) - ability.ManaCost >= 0) && ability.Cooldown == 0.000000f && ability.Level != 0 && !source.IsStunned());
         }
         private static void SetChasingKeyString(uint key)
         {
