@@ -229,6 +229,7 @@ namespace Ez_Unit_Control
                 MyPlayer = ObjectMgr.LocalPlayer;
                 MyHero = ObjectMgr.LocalHero;
                 LastMoving = Vector3.Zero;
+                TargetHero = null;
                 Loaded = true;
             }
 
@@ -480,6 +481,7 @@ namespace Ez_Unit_Control
         }
         public static Hero GetClosestToMouseTarget(Hero source, float range = 1000)
         {
+            if (source == null) return null;
             var mousePosition = Game.MousePosition;
             var enemyHeroes =
                 ObjectMgr.GetEntities<Hero>()
