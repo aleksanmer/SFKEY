@@ -119,8 +119,8 @@ namespace Ez_Unit_Control
             var neutrals = new EzElement(ElementType.CATEGORY, "Neutrals", false);
             UseHeal = new EzElement(ElementType.CHECKBOX, "Use Heal [Priest]", true);
             PriestsHealHero = new EzElement(ElementType.CHECKBOX, "Priests heal hero [Priest]", true);
-            UseIceArmor = new EzElement(ElementType.CHECKBOX, "Use Ice Armor on my hero [Ogre Magi]", true);
-            UseIceArmorAllies = new EzElement(ElementType.CHECKBOX, "Use Ice Armor on allied units (controllable) [Ogre Magi]", false);
+            UseIceArmor = new EzElement(ElementType.CHECKBOX, "Use Ice Armor on allied heroes [Ogre Magi]", true);
+            UseIceArmorAllies = new EzElement(ElementType.CHECKBOX, "Use Ice Armor on creeps (his) [Ogre Magi]", false);
             PriestsHealAlliesCreeps = new EzElement(ElementType.CHECKBOX, "Priests heal allied units (controllable) [Priest]", false);
             UseChainLightning = new EzElement(ElementType.CHECKBOX, "Use Chain Lightning [Harpy Storm]", true);
             UseSlam = new EzElement(ElementType.CHECKBOX, "Use Slam [Big Thunder Lizard]", true);
@@ -158,7 +158,7 @@ namespace Ez_Unit_Control
             Interface.AddMainElement(new EzElement(ElementType.TEXT, "Info", false));
             Target = new EzElement(ElementType.TEXT, "Current Target: None", false);
             Interface.AddMainElement(Target);
-            Interface.AddMainElement(new EzElement(ElementType.TEXT, "Version: 1.0.0.4", true));
+            Interface.AddMainElement(new EzElement(ElementType.TEXT, "Version: 1.0.0.5", true));
 
             SupportedUnits.Add(ClassID.CDOTA_BaseNPC_Invoker_Forged_Spirit);
             SupportedUnits.Add(ClassID.CDOTA_BaseNPC_Warlock_Golem);
@@ -343,23 +343,35 @@ namespace Ez_Unit_Control
                                         break;
                                     case "npc_dota_neutral_ogre_magi":
                                         var iceArmor = unit.Spellbook.Spell1;
-                                        if (UseIceArmor.isActive)
+                                        if (UseIceArmor.isActive && Utils.SleepCheck("icearmorom"+unit.Handle))
                                         {
-                                            if (!MyHero.Modifiers.Any(x => x.Name == ("modifier_ogre_magi_frost_armor")))
+                                            var alliedHeroes = ObjectMgr.GetEntities<Hero>().Where(x => x.Team == MyHero.Team && x.Distance2D(unit) <= iceArmor.CastRange && !x.Modifiers.Any(y => y.Name == ("modifier_ogre_magi_frost_armor")));
+
+                                            if (UseIceArmor.isActive && alliedHeroes.Any())
                                             {
-                                                if (CanCast(unit, iceArmor))
-                                                    iceArmor.UseAbility(MyHero);
-                                            }
-                                            else if (UseIceArmorAllies.isActive)
-                                            {
-                                                foreach (Unit uni in controllable_units)
+                                                foreach (Hero hero in alliedHeroes)
                                                 {
-                                                    if (!uni.Modifiers.Any(x => x.Name == ("modifier_ogre_magi_frost_armor")))
-                                                        if (CanCast(unit, iceArmor))
-                                                            iceArmor.UseAbility(uni);
+                                                    if (CanCast(unit, iceArmor))
+                                                        iceArmor.UseAbility(hero);
+
                                                 }
                                             }
+                                            else
+                                            {
+                                                if (UseIceArmorAllies.isActive)
+                                                {
+                                                    foreach (Unit uni in controllable_units)
+                                                    {
+                                                        if (!uni.Modifiers.Any(x => x.Name == ("modifier_ogre_magi_frost_armor")))
+                                                            if (CanCast(unit, iceArmor))
+                                                                iceArmor.UseAbility(uni);
+                                                    }
+                                                }
+                                            }
+
+                                            
                                             AttackIfCan(unit, target);
+                                            Utils.Sleep(500, "icearmorom"+unit.Handle);
                                         } else AttackIfCan(unit, target);
                                        break;
                                     case "npc_dota_neutral_big_thunder_lizard":
@@ -469,7 +481,9 @@ namespace Ez_Unit_Control
         }
         private static bool CanCast(Unit source, Ability ability)
         {
-            return ((Math.Round(source.Mana) - ability.ManaCost >= 0) && ability.Cooldown == 0.000000f && ability.Level != 0 && !source.IsStunned());
+            if (!Utils.SleepCheck("cast" + ability.Handle)) return false;
+            Utils.Sleep(1000+Game.Ping, "cast" + ability.Handle);
+            return ((Math.Round(source.Mana) - ability.ManaCost >= 0) && ability.Cooldown == 0f && ability.Level != 0 && !source.IsStunned());
         }
         private static void SetChasingKeyString(uint key)
         {
