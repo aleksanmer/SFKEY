@@ -39,7 +39,8 @@
     <Reference Include="Ensage">
       <HintPath>D:\PlaySharp\System\Ensage.dll</HintPath>
     </Reference>
-    <Reference Include="Ensage.Common">
+    <Reference Include="Ensage.Common, Version=1.1.0.0, Culture=neutral, processorArchitecture=AMD64">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>D:\PlaySharp\System\Ensage.Common.dll</HintPath>
     </Reference>
     <Reference Include="SharpDX">

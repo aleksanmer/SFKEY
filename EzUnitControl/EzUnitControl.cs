@@ -26,6 +26,7 @@ namespace Ez_Unit_Control
         private static EzElement MoveTheSameWayAsHero;
         private static EzElement FollowIfNoTarget;
         private static EzElement UseAbilities;
+        private static EzElement AttackTarget;
 
         private static Player MyPlayer;
         private static Hero MyHero;
@@ -78,6 +79,8 @@ namespace Ez_Unit_Control
             Interface.AddMainElement(Enabled);
             Interface.AddMainElement(new EzElement(ElementType.TEXT, "Main options", false));
             UseAbilities = new EzElement(ElementType.CHECKBOX, "Use abilities", true);
+            AttackTarget = new EzElement(ElementType.CHECKBOX, "Attack target (if can)", true);
+            Interface.AddMainElement(AttackTarget);
             Interface.AddMainElement(UseAbilities);
 
             var Moving = new EzElement(ElementType.CATEGORY, "Moving", false);
@@ -149,7 +152,7 @@ namespace Ez_Unit_Control
             Interface.AddMainElement(new EzElement(ElementType.TEXT, "Info", false));
             Target = new EzElement(ElementType.TEXT, "Current Target: None", false);
             Interface.AddMainElement(Target);
-            Interface.AddMainElement(new EzElement(ElementType.TEXT, "Version: 1.0.0.1", true));
+            Interface.AddMainElement(new EzElement(ElementType.TEXT, "Version: 1.0.0.3", true));
 
             SupportedUnits.Add(ClassID.CDOTA_BaseNPC_Invoker_Forged_Spirit);
             SupportedUnits.Add(ClassID.CDOTA_BaseNPC_Warlock_Golem);
@@ -407,7 +410,7 @@ namespace Ez_Unit_Control
         {
             if (range == 0f)
             {
-                if ((cStun ? !target.IsStunned() : true) && CanCast(source, ability))
+                if ((cStun ? !target.IsStunned() : true) && CanCast(source, ability) && !target.IsInvul())
                 { 
                     switch(targetType) {
                         case 0:
@@ -426,13 +429,13 @@ namespace Ez_Unit_Control
             }
             else
             {
-                if ((cStun ? !target.IsStunned() : true) && CanCast(source, ability) && source.Distance2D(target) <= range) { ability.UseAbility(); Utils.Sleep(ability.ChannelTime + Game.Ping, ability.Handle.ToString()); }
+                if ((cStun ? !target.IsStunned() : true) && CanCast(source, ability) && !target.IsInvul() && source.Distance2D(target) <= range) { ability.UseAbility(); Utils.Sleep(ability.ChannelTime + Game.Ping, ability.Handle.ToString()); }
                 else if (Utils.SleepCheck(ability.Handle.ToString())) AttackIfCan(source, target);
             }
         }
         private static void AttackIfCan(Unit source, Unit target)
         {
-            if (source.CanAttack()) source.Attack(target);
+            if (source.CanAttack() && AttackTarget.isActive && !target.IsAttackImmune() && !target.IsInvul()) source.Attack(target);
         }
         private static bool CanCast(Unit source, Ability ability)
         {
