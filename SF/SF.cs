@@ -86,7 +86,7 @@
                 str += onlyKills ? ", Only kills" : "";
                 str += active ? ", Active" : "";
                 str += " ]";
-                str += " P - Toggle, L - Only Kills, 5 - Auto Raze";
+                str += " P - Toggle, L - Only Kills, T - Auto Raze";
 
                 text.DrawText(null, str, 5, 40, Color.DarkGreen);
             }
